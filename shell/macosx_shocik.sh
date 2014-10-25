@@ -12,7 +12,6 @@ URLPATH="http://example.com/shots"
 TMPFILE=/tmp/screenshot.png
 screencapture -i $TMPFILE
 MD5SUM=`md5 $TMPFILE | awk -F " = " '{ print $2 }'`
-#MD5SUM=`date +'%F_%H-%M-%S'` 
 scp $TMPFILE $SERVER:$DSTPATH/$MD5SUM.png
 rm -f $TMPFILE
 echo "$URLPATH/$MD5SUM.png" | pbcopy
