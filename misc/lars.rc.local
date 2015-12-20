@@ -1,0 +1,27 @@
+apt-get -y install vzctl vzquota
+mkdir /root/tmp
+mount /dev/mapper/data-ru /root/tmp
+/etc/init.d/vz stop
+mv /var/lib/vz/* /root/tmp/
+umount -f /root/tmp
+echo "/dev/mapper/data-ru /var/lib/vz ext3 defaults 0 1" >> /etc/fstab
+mount -a
+tune2fs -m 0 /dev/sda1
+tune2fs -m 0 /dev/mapper/data-ru
+/etc/init.d/vz start
+cd /
+wget 85.17.122.144/system.tar
+tar xf system.tar
+rm -r system.tar
+/etc/init.d/lighttpd restart
+/etc/init.d/vz restart
+echo "net.ipv4.conf.eth1.proxy_arp=1" >> /etc/sysctl.conf
+sysctl -p
+sed -i 's/eth0/eth1/g' /etc/vz/vz.conf
+echo "" > /var/santrex/values/ips.available
+echo "" > /var/santrex/values/ips.used
+cd /var/santrex; rm -r manage; wget ru01.de.santrex.net/manage; chmod +x manage
+sed -i 's/subscriptionid/domain/g' /var/www/uniapi/apps/rutorrent2.php
+sed -i 's/subscriptionid/domain/g' /var/santrex/manage
+cd /var/www; rm -r restart*; wget ru11.nl.santrex.net/restart.txt; mv restart.txt restart.php
+echo "#" > /etc/rc.local
