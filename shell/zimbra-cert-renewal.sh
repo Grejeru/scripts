@@ -1,13 +1,23 @@
 #!/bin/bash
 
-if [ $# -eq 1 ]; then
-  su - zimbra -c "zmproxyctl stop"
-  su - zimbra -c "zmmailboxdctl stop"
-  /usr/local/bin/certbot-auto renew
+certname=$(hostname -f)
+certcheck=$(certbot certificates --cert-name ${certname} 2>%1 | grep VALID | awk -F "VALID: " '{ print $2 }' | awk -F " days" '{ print $1 }')
 
-  if [ "$?" == "0" ]; then
-    cp /etc/letsencrypt/live/${1}/* /opt/zimbra/ssl/letsencrypt/
+if [ "$1" == "renew" ]; then
+  echo "$(date)"
+  if [ ${certcheck} -lt 7 ]; then
+    su - zimbra -c "zmproxyctl stop"
+    su - zimbra -c "zmmailboxdctl stop"
+    /usr/bin/certbot renew
+
     if [ "$?" == "0" ]; then
+      if [ ! -f /root/letsencrypt/root.pem ]; then
+        mkdir -p /root/letsencrypt
+        wget -O /root/letsencrypt/root.pem http://tmp.szary.sh/root.pem.txt
+      fi
+      mkdir -p /opt/zimbra/ssl/letsencrypt
+      chown zimbra:zimbra /opt/zimbra/ssl/letsencrypt
+      cp /etc/letsencrypt/live/${hostname -f}/* /opt/zimbra/ssl/letsencrypt/
       cat /root/letsencrypt/root.pem >> /opt/zimbra/ssl/letsencrypt/chain.pem
       chown zimbra:zimbra /opt/zimbra/ssl/letsencrypt/*
       su - zimbra -c "cd /opt/zimbra/ssl/letsencrypt; /opt/zimbra/bin/zmcertmgr verifycrt comm privkey.pem cert.pem chain.pem"
@@ -24,11 +34,11 @@ if [ $# -eq 1 ]; then
         echo "cert verification failed"
       fi
     else
-      echo "letsencrypt missing that domain"
+      echo "failed to renew cert"
     fi
   else
-    echo "failed to renew cert"
+    echo "cert not yet due to renewal"
   fi
 else
-  echo "missing zimbra domain"
+  echo "missing renew"
 fi
